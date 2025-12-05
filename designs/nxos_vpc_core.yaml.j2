@@ -1,0 +1,100 @@
+design:
+  name: "NXOS VPC Core Design"
+  description: "Generate base configuration for a Nexus NX-OS VPC core pair."
+  version: 1
+
+fields:
+  core1_hostname:
+    type: string
+    label: "Core 1 hostname"
+    required: true
+
+  core2_hostname:
+    type: string
+    label: "Core 2 hostname"
+    required: true
+
+  mgmt_vrf:
+    type: string
+    label: "Management VRF name"
+    default: "management"
+
+  mgmt_vlan:
+    type: integer
+    label: "Management VLAN ID"
+    default: 10
+
+  mgmt_gateway:
+    type: ip_address
+    label: "Management default gateway"
+    required: true
+
+  domain_id:
+    type: integer
+    label: "VPC domain ID"
+    required: true
+
+  keepalive_link:
+    type: string
+    label: "VPC peer-keepalive interface (e.g. mgmt0)"
+    default: "mgmt0"
+
+  peer_link_port_channel:
+    type: integer
+    label: "VPC peer-link Port-Channel ID"
+    default: 1
+
+outputs:
+  core1_config:
+    label: "Core 1 Configuration"
+    type: text
+    template: |
+      ! ========= Core 1 =========
+      hostname {{ core1_hostname }}
+
+      vrf context {{ mgmt_vrf }}
+        ip route 0.0.0.0/0 {{ mgmt_gateway }}
+
+      vlan {{ mgmt_vlan }}
+        name MGMT
+
+      interface Vlan{{ mgmt_vlan }}
+        vrf member {{ mgmt_vrf }}
+        ip address {{ mgmt_gateway }}
+        no shutdown
+
+      vpc domain {{ domain_id }}
+        peer-keepalive destination {{ mgmt_gateway }} source {{ keepalive_link }}
+
+      interface port-channel{{ peer_link_port_channel }}
+        switchport
+        switchport mode trunk
+        spanning-tree port type network
+        vpc peer-link
+
+  core2_config:
+    label: "Core 2 Configuration"
+    type: text
+    template: |
+      ! ========= Core 2 =========
+      hostname {{ core2_hostname }}
+
+      vrf context {{ mgmt_vrf }}
+        ip route 0.0.0.0/0 {{ mgmt_gateway }}
+
+      vlan {{ mgmt_vlan }}
+        name MGMT
+
+      interface Vlan{{ mgmt_vlan }}
+        vrf member {{ mgmt_vrf }}
+        ip address {{ mgmt_gateway }}
+        no shutdown
+
+      vpc domain {{ domain_id }}
+        peer-keepalive destination {{ mgmt_gateway }} source {{ keepalive_link }}
+
+      interface port-channel{{ peer_link_port_channel }}
+        switchport
+        switchport mode trunk
+        spanning-tree port type network
+        vpc peer-link
