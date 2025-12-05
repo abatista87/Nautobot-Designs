@@ -81,7 +81,7 @@ class NxosVpcCoreDesign(DesignJob):
 
 
 # This is what Nautobot shows in the Jobs UI as the "job group" name
-name = "Rivian Designs"
+name = "Nexus Designs"
 
 # Register the job so Nautobot knows about it
 register_jobs(NxosVpcCoreDesign)
