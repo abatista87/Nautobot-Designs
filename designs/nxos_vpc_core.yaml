@@ -1,0 +1,112 @@
+version: 1
+slug: nxos-vpc-core
+name: NX-OS VPC Core Pair
+description: Simple NX-OS VPC core pair (core1/core2) config generator.
+
+fields:
+  hostname_core1:
+    label: Core 1 hostname
+    required: true
+    type: string
+
+  hostname_core2:
+    label: Core 2 hostname
+    required: true
+    type: string
+
+  domain_name:
+    label: Domain name
+    required: true
+    type: string
+    default: example.com
+
+  mgmt_vrf:
+    label: Management VRF
+    required: false
+    type: string
+    default: management
+
+  mgmt_ip_core1:
+    label: Core 1 mgmt IP
+    required: true
+    type: ipaddress
+
+  mgmt_ip_core2:
+    label: Core 2 mgmt IP
+    required: true
+    type: ipaddress
+
+  vpc_domain_id:
+    label: VPC domain ID
+    required: true
+    type: integer
+    default: 10
+
+  vpc_peer_link_iface:
+    label: vPC peer-link interface (port-channel)
+    required: true
+    type: string
+    default: port-channel10
+
+  vpc_keepalive_source:
+    label: vPC keepalive source interface
+    required: true
+    type: string
+    default: mgmt0
+
+  vpc_keepalive_dest:
+    label: vPC keepalive destination IP
+    required: true
+    type: ipaddress
+
+template: |
+  ! ===== {{ hostname_core1 }} =====
+  hostname {{ hostname_core1 }}
+  ip domain-name {{ domain_name }}
+
+  vrf context {{ mgmt_vrf }}
+    ip route 0.0.0.0/0 {{ vpc_keepalive_dest }}
+
+  interface mgmt0
+    vrf member {{ mgmt_vrf }}
+    ip address {{ mgmt_ip_core1 }}
+
+  feature lacp
+  feature vpc
+
+  interface {{ vpc_peer_link_iface }}
+    description vPC Peer-Link to {{ hostname_core2 }}
+    switchport
+    switchport mode trunk
+    spanning-tree port type network
+    vpc peer-link
+
+  vpc domain {{ vpc_domain_id }}
+    peer-keepalive destination {{ vpc_keepalive_dest }} source {{ vpc_keepalive_source }} vrf {{ mgmt_vrf }}
+    peer-gateway
+
+  !
+  ! ===== {{ hostname_core2 }} =====
+  hostname {{ hostname_core2 }}
+  ip domain-name {{ domain_name }}
+
+  vrf context {{ mgmt_vrf }}
+    ip route 0.0.0.0/0 {{ vpc_keepalive_dest }}
+
+  interface mgmt0
+    vrf member {{ mgmt_vrf }}
+    ip address {{ mgmt_ip_core2 }}
+
+  feature lacp
+  feature vpc
+
+  interface {{ vpc_peer_link_iface }}
+    description vPC Peer-Link to {{ hostname_core1 }}
+    switchport
+    switchport mode trunk
+    spanning-tree port type network
+    vpc peer-link
+
+  vpc domain {{ vpc_domain_id }}
+    peer-keepalive destination {{ vpc_keepalive_dest }} source {{ vpc_keepalive_source }} vrf {{ mgmt_vrf }}
+    peer-gateway
